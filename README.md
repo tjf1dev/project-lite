@@ -1,8 +1,13 @@
 # project-lite
 Discord CLI Client made in python.
 
+> [!IMPORTANT]  
+> This project is in **alpha**. Expect some things not working.
+
 # is it against tos of discord?
-> while this is a custom client, it may be considered a selfbot. there are no confirmed bans tho
+> while this is a custom client, discord doesnt give out bans for these. 
+
+
 
 ## Checklist
 - Messaging
