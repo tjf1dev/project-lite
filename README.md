@@ -22,7 +22,9 @@ Discord CLI Client made in python.
   - [ ] Polls
 - Information
   - [x] List guilds
-  - [ ] List channels
+  - [x] List channels
+  - [x] Select guilds
+  - [x] Select channels
   - [x] Get username
   - [x] Get profile picture
 ### more soon
