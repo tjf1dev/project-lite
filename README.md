@@ -12,7 +12,7 @@ Discord CLI Client made in python.
 ## Checklist
 - Messaging
   - [x] Sending text
-  - [ ] Recieving text
+  - [x] Recieving text (unstable)
   - [ ] Sending attachments
   - [ ] Recieving attachments
   - [ ] App commands
