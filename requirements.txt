@@ -1,0 +1,8 @@
+pytz
+tzlocal
+datetime
+requests
+climage
+python-dateutil
+readchar
+colorama
