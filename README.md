@@ -9,10 +9,10 @@ Discord CLI Client made in python.
 
 
 
-## Checklist
+## Progress (current version)
 - Messaging
   - [x] Sending text
-  - [x] Recieving text (unstable)
+  - [ ] Recieving text
   - [ ] Sending attachments
   - [ ] Recieving attachments
   - [ ] App commands
