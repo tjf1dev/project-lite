@@ -5,11 +5,10 @@ Discord CLI Client made in python.
 > This project is in **alpha**. Expect some things not working.
 
 > [!NOTE]
-> The client doesn't send your token to anyone.
+> The client doesn't send share your token with anyone.
+
 ## is it against tos of discord?
 > this client uses the Discord API to perform actions. discord does not allow this. use the client at your own risk
-
-
 
 ## Progress (current version)
 - Messaging
