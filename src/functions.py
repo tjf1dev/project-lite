@@ -1,4 +1,4 @@
-import requests,os,dateutil,climage,time
+import requests,os,dateutil,climage,time, readchar
 from io import BytesIO
 from PIL import Image
 from login.config import *
@@ -41,7 +41,8 @@ def get_banner_url(user_info):
     return f"https://cdn.discordapp.com/banners/{user_info['id']}/{user_info['banner']}.png"
 
 
-
+def clear():
+    os.system("cls" if os.name == "nt" else "clear")
 def browse(token):
     headers = {"Authorization": f"{token}"}
 
@@ -230,21 +231,34 @@ def send_messages(channel_id, token):
             pass
         send_message(channel_id, content, token)
 def rs(channelid, token):
-    print("test")
     while True:
-        receive_messages(channelid,token)
-        channel = custom_get_request(f"channels/{channelid}",token)
-        guildid = channel["guild_id"]
-        guild = custom_get_request(f"guilds/{guildid}",token)
-        print("\nhint: use /help")
-        content = input(f"[{channel['name']} in {guild['name']}][RS]: ")
-        if content == "/exit":
+        try:
+            
+                receive_messages(channelid, token)
+                channel = custom_get_request(f"channels/{channelid}", token)
+                guildid = channel["guild_id"]
+                guild = custom_get_request(f"guilds/{guildid}", token)
+                print("\nhint: use /help\nuse Ctrl+C to quit")
+                content = input(f"[{channel['name']} in {guild['name']}][RS]: ")
+
+                if content.startswith("/"):
+                    if content == "/exit":
+                        break
+                    if content == "/help":
+                        print("You are currently in RS (Read-Send) mode\nTo refresh messages, hit enter with an empty message.\nPlease note that RS mode is unstable.\nCommands available in RS mode:\n/help - displays this message\n/exit - leaves RS mode.")
+                        print("press any key to continue")
+                        readchar.readkey()
+                    else:
+                        print(f"invalid command! use /help to get a list of commands.\nwanted to use a slash command instad? {colorama.Style.BRIGHT}slash commands are not available in project-lite yet.{colorama.Style.RESET_ALL}")
+                        print("press any key to continue")
+                        readchar.readkey()
+                else:
+                    send_message(channelid, content, token)
+        except KeyboardInterrupt:
+            clear()
+            print("\n")
             break
-        if content == "/help":
-            print("You are currently in RS (Read-Send) mode\nTo refresh messages, hit enter with an empty message.\nPlease note that RS mode is unstable.\nCommands available in RS mode:\n/help - displays this message\n/exit - leaves RS mode.")
-            input("Press enter to continue")
-        else:
-            send_message(channelid,content,token)
+            
 def typing(channelid, token):
     url = f"https://discord.com/api/v10/channels/{channelid}/typing"
     headers = {"Authorization": f"{token}", "Content-Type": "application/json"}

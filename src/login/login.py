@@ -1,13 +1,18 @@
 from login import config
 from functions import *
-def Login():
+from logger import logger
+def Login(after_fail:bool=False):
     global save,token,saving
     conf = config.Load()
-    if conf==None:
+    if after_fail:
+        logger.debug("restarting after authentication failure")
+    if conf==None or after_fail:
+        
         print("Welcome to project-lite.\nTo start, you need to login to your Discord account.")
         token = input("Enter your token: ")
         val = validate_token(token)
         while val!=True:
+            logger.debug("could not validate token")
             print("Couldn't log in, please check your token.")
             token = input("Enter your token: ")
         save = input("Save login? [Y/n] >")
@@ -30,7 +35,12 @@ def Login():
     elif conf['token']=="":
         print("Welcome to project-lite.\n")
     else:
-        print("Welcome back,",get_discord_username(get_discord_user_info(conf['token'])))
+        username = get_discord_username(get_discord_user_info(conf['token']))
+        if not username:
+            logger.warning("could not fetch username")
+            print("Your token appears to be invalid. Please re-authenticate.")
+            Login(after_fail=True)
+        print(f"Welcome back, {username}")
         token=conf['token']
 if __name__ == "__main__":
     raise RuntimeError("You should not run this script directly. Use the main script.")

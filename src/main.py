@@ -5,7 +5,7 @@ from functions import *
 from os.path import abspath, dirname
 import pytz, tzlocal, dateutil.parser
 os.chdir(dirname(abspath(__file__)))
-__version__ = '0.2.0-alpha'
+__version__ = '0.2.1-alpha'
 def change_channel_id(cid):
     config.ChannelID.set(cid)
     print(f"Channel ID changed to {cid}.")
