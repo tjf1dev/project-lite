@@ -87,8 +87,7 @@ To exit `[RS]` mode, type `/exit`. You can also use `/help` to view other comman
   - [x] List channels
   - [x] Select guilds
   - [x] Select channels
-  - [x] Get username
-  - [x] Get profile picture
+  - [x] Get user info (@me)
 - Voice
   - project-lite will not have voice features.
 - Other
