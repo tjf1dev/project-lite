@@ -74,13 +74,13 @@ To exit `[RS]` mode, type `/exit`. You can also use `/help` to view other comman
 - Messaging
   - [x] Sending text
   - [x] Recieving text
-  - [x] Format mentions
+  - [ ] Format mentions
   - [ ] Sending attachments
   - [ ] Recieving attachments
   - [ ] App commands
-  - ~~[ ] Emojis~~
-  - ~~[ ] Stickers~~
-  - ~~[ ] Gifs~~
+  - [ ] ~~Emojis~~
+  - [ ] ~~Stickers~~
+  - [ ] ~~Gifs~~
   - [ ] Polls
 - Information
   - [x] List guilds
