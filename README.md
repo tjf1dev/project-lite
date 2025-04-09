@@ -70,15 +70,15 @@ To exit `[RS]` mode, type `/exit`. You can also use `/help` to view other comman
 > [!CAUTION]
 > NEVER share your token with anyone. This can make someone log in without a password or 2FA.
 
-## Progress (current version)
+## Progress
 - Messaging
-  - [x] Sending text
-  - [x] Recieving text
+  - [x] Sending messages
+  - [x] Recieving messages
+  - [ ] Edit messages
   - [ ] Format mentions
   - [ ] Sending attachments
   - [ ] Recieving attachments
   - [ ] App commands
-  - [ ] ~~Emojis~~
   - [ ] ~~Stickers~~
   - [ ] ~~Gifs~~
   - [ ] Polls
