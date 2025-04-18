@@ -1,13 +1,45 @@
 import json, os
-def Load():
+from typing import List, Type
+from logger import logger
+class Default(object):
+    """ Default configuration """
+    def __init__(self) -> None:
+        """
+            The actual config. Remember to update this every time it changes!
+        """
+        self.token = ""
+        self.saving = 1
+        self.channelid = 0
+        self.favorites = []
+        
+    def Get() -> dict:
+        """
+            Returns the default configuration as a dict.
+        """
+        return Default.__dict__
+    def JSON() -> str:
+        """
+            Returns the default configuration as a JSON string.
+        """
+        return json.dumps(Default.Get(), indent=4)
+def Load() -> dict:
+    """
+        Returns the current configuration file as a dict. If not found, returns the default configuration.
+    """
     try:
         with open("..\\config.json", "r") as f:
             config = json.load(f)
         return config
-    except (json.JSONDecodeError, FileNotFoundError):
-        return {"token": "", "saving": 0}
+    except FileNotFoundError:
+        logger.warning("could not find config file, creating one now...")
+        Save(Default().Get())
+    except json.JSONDecodeError:
+        return Default.Get()
 
-def Save(config):
+def Save(config) -> None:
+    """
+        Save (merge) the configuration file.
+    """
     config_path = "..\\config.json"
     if os.path.exists(config_path):
         with open(config_path, "r") as f:
@@ -25,11 +57,19 @@ def Save(config):
             else:
                 d[k] = v
 
+
     deep_update(existing_config, config)
     with open(config_path, "w") as f:
         json.dump(existing_config, f, indent=4)
+        
 class Favorite():
-    def add(cid,cname):
+    """
+        Class for managing favorite channels.
+    """
+    def add(cid,cname) -> None:
+        """
+            Add a new channel to favorites.
+        """
         with open("..\\config.json", "r") as f:
             data = json.load(f)
             if "favorites" not in data:
@@ -42,30 +82,48 @@ class Favorite():
                     }
                     )
                 Save(data)
-    def get():
+    def get() -> List[dict]:
+        """
+            Returns all favorite channels as a list or dicts
+        """
         try:
             with open("..\\config.json", "r") as f:
                 data = json.load(f)
                 return data["favorites"]
         except KeyError:
             return []
+        
 class ChannelID():
-    def get():
+    """
+        Class for managing the stored current channel
+    """
+    def get() -> int:
+        """
+            Returns the current channel ID stored in the config.json file.
+        """
         try:
             with open("..\\config.json", "r") as f:
                 data = json.load(f)
                 return data["channelid"]
         except KeyError:
             return 0
-    def set(cid):
+    def set(cid) -> None:
+        """
+            Sets the current channel ID in the config.json file.
+        """
         with open("..\\config.json", "r") as f:
             data = json.load(f)
             data["channelid"] = cid
             Save(data)
 
-def Wipe():
+def Wipe() -> Type[Default]:
+    """
+        Replaces the configuration with the default. Returns the default configuration.
+    """
     with open("..\\config.json", "w") as f:
-        f.writelines("")
+        f.writelines(Default.Get())
+        return Default.Get()
+
 Config = Load()
 token = Config["token"]
 saving = Config["saving"]
