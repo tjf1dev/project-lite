@@ -6,3 +6,4 @@ climage
 python-dateutil
 readchar
 colorama
+prompt_toolkit

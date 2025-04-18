@@ -45,7 +45,7 @@ When you're in a channel, the screen should look similar to this:
 
 ![screen with a selected channel](https://github.com/user-attachments/assets/0d054f38-6fd6-4b16-bc29-088ec93b0e36)
 
-The `[CMD]` next to the name is indicating you are in **command mode**. You can type /help and hit enter to see a list of available commands.
+The `[CMD]` next to the name is indicating you are in **command mode**. You can type `help` and hit enter to see a list of available commands. In command mode, commands **don't have prefixes**.
 To send messages to the channel, you can enter **rs** *(read-send)* **mode**. Type `rs` in the text box and hit enter.
 The `[CMD]` should now change to `[RS]`. **Every message you type now will be sent in the channel**
 Your screen should look like this now:
@@ -70,15 +70,15 @@ To exit `[RS]` mode, type `/exit`. You can also use `/help` to view other comman
 > [!CAUTION]
 > NEVER share your token with anyone. This can make someone log in without a password or 2FA.
 
-## Progress (current version)
+## Progress
 - Messaging
-  - [x] Sending text
-  - [x] Recieving text
+  - [x] Sending messages
+  - [x] Recieving messages
+  - [ ] Edit messages
   - [ ] Format mentions
   - [ ] Sending attachments
   - [ ] Recieving attachments
   - [ ] App commands
-  - [ ] ~~Emojis~~
   - [ ] ~~Stickers~~
   - [ ] ~~Gifs~~
   - [ ] Polls
