@@ -7,6 +7,10 @@ import curses # AHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH
 from prompt_toolkit import PromptSession
 from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.shortcuts import radiolist_dialog
+from logger import logger, deprecated
+from login import login
+from login import config
+@deprecated("Please use get_user() instead. Will be removed in v0.2.4")
 def get_discord_user_info(token):
     url = "https://discord.com/api/v10/users/@me"
     headers = {
@@ -17,16 +21,58 @@ def get_discord_user_info(token):
         return response.json()
     else:
         return None
-def validate_token(token):
+
+def get_user(token) -> dict | None:
+    """
+        Get user info from Discord API using token.
+        Args:
+            token (str): Discord token.
+        Returns:
+            dict: User info from Discord API, None if failed.
+    """
+    url = "https://discord.com/api/v10/users/@me"
+    if not isinstance(token, str):
+        logger.error(f"Token is: {type(token).__name__}. It should be a string.")
+        logger.info("Hint: Report issues at https://github.com/tjf1dev/project-lite/issues")
+        return None
+    response = requests.get(url, headers={"Authorization": f"{token}"})
+    if not response.ok or response.json().get("code", 1) == 0:
+        logger.error(f"Failed to get user. Responded with code: {response.status_code}")
+        if response.status_code == 401:
+            logger.error("Your token is invalid. Use 'logout' to reauthenticate.")
+        return None
+    logger.debug("User fetch OK")
+    return response.json()
+def logout():
+    """
+        Logs out from Discord by deleting the token from the config file.
+    """
+    c = config.Load()
+    if c:
+        c["token"] = None
+        config.Save(c)
+        logger.info("Logged out successfully.")
+        login.Login(5)
+    else:
+        logger.warning("No token found to log out.")
+def validate_token(token: str) -> bool:
+    """
+        Validates the token. Returns a bool indicating whether the token is valid
+    """
+    logger.debug("Validating token...")
+    if not isinstance(token, str): 
+        logger.error(f"Token is: {type(token).__name__}. It should be a string")
+        return False
     url = "https://discord.com/api/v10/users/@me"
     headers = {
-        "Authorization": f"{token}"
+        "Authorization": f"{token.strip()}"
     }
     response = requests.get(url, headers=headers)
-    if response.status_code == 200:
-        return True
-    else:
-        return False
+    if not response.ok: 
+        logger.error(f"Failed to validate token. Server responded with code {response.status_code}")
+    else: logger.debug("Token is ok")
+    return response.ok
+@deprecated("Please use get_user()['username'] instead. Will be removed in v0.2.4")
 def get_discord_username(user_info):
     try:
         if user_info["discriminator"] != "0":
@@ -35,10 +81,11 @@ def get_discord_username(user_info):
             return f"{user_info['username']}"
     except Exception:
         return None
-def get_profile_picture_url(user_info):
-    return f"https://cdn.discordapp.com/avatars/{user_info['id']}/{user_info['avatar']}.png"
-def get_banner_url(user_info):
-    return f"https://cdn.discordapp.com/banners/{user_info['id']}/{user_info['banner']}.png"
+
+def get_profile_picture(user) -> str:
+    return f"https://cdn.discordapp.com/avatars/{user['id']}/{user['avatar']}.png"
+def get_banner(user) -> str:
+    return f"https://cdn.discordapp.com/banners/{user['id']}/{user['banner']}.png"
 
 
 def clear():
@@ -84,7 +131,8 @@ def browse(token):
         ChannelID.set(channel_id)
 
     return channel_id  # Returns None if canceled
-def browse_channel(channel_id, token):
+def browse_channel(token, cid):
+    channel_id = cid
     headers = {
         "Authorization": f"{token}"
     }
@@ -129,19 +177,18 @@ def browse_direct(token):
 
     else:
         print(f"Failed to fetch dms. Status code: {response.status_code}")
-def send_message(channel_id, content, token):
+def send_message(token, cid, content, ):
     if not content:
         return
 
-    url = f"https://discord.com/api/v9/channels/{channel_id}/messages"
+    url = f"https://discord.com/api/v9/channels/{cid}/messages"
     headers = {
         "Authorization": token,
         "Content-Type": "application/json",
-        "Referer": f"https://discord.com/channels/@me/{channel_id}"
+        "Referer": f"https://discord.com/channels/@me/{cid}"
     }
     data = {
-        "content": content,
-        "tts": False
+        "content": content
     }
     
     response = requests.post(url, headers=headers, json=data)
@@ -149,9 +196,9 @@ def send_message(channel_id, content, token):
     if response.status_code != 200:
         print(f"Failed to send message. Status code: {response.status_code}, Response: {response.text}")
 
-def fav(channelid, token):
-    channel = custom_get_request(f"channels/{channelid}",token)
-    Favorite.add(channelid,channel["name"])
+def fav(token, cid):
+    channel = custom_get_request(f"channels/{cid}",token)
+    Favorite.add(cid, channel["name"])
 
 
 def fav_select():
@@ -193,8 +240,8 @@ def fav_select():
 
     return curses.wrapper(menu)
 
-def get_messages_from_channel(channel_id, token):
-    url = f"https://discord.com/api/v10/channels/{channel_id}/messages"
+def get_messages_from_channel(token, cid):
+    url = f"https://discord.com/api/v10/channels/{cid}/messages"
     headers = {"Authorization": f"{token}", "Content-Type": "application/json"}
     response = requests.get(url, headers=headers)
     if response.status_code == 200:
@@ -202,8 +249,8 @@ def get_messages_from_channel(channel_id, token):
     else:
         print(f"Failed to fetch messages. Status code: {response.status_code}")
         return []
-def receive_messages(channel_id, token):
-    messages = get_messages_from_channel(channel_id, token)
+def receive_messages(token, cid):
+    messages = get_messages_from_channel(cid, token)
     if not messages:  # More Pythonic check for an empty list
         return
 
@@ -222,20 +269,20 @@ def receive_messages(channel_id, token):
         else:
             print(f"[{message['author']['username']} {readable_timestamp}]: {message['content']}")
 
-def send_messages(channel_id, token):
+def send_messages(token, cid):
     while True:
-        content = input(f"[{get_discord_username(get_discord_user_info(token))}/{channel_id} (SEND MODE)]: ")
+        content = input(f"[{get_discord_username(get_discord_user_info(token))}/{cid} (SEND MODE)]: ")
         if content.lower() == "exit":
             break
         if content == "":
             pass
-        send_message(channel_id, content, token)
-def rs(channelid, token):
+        send_message(cid, content, token)
+def rs(token, cid):
     while True:
         try:
             
-                receive_messages(channelid, token)
-                channel = custom_get_request(f"channels/{channelid}", token)
+                receive_messages(cid, token)
+                channel = custom_get_request(f"channels/{cid}", token)
                 guildid = channel["guild_id"]
                 guild = custom_get_request(f"guilds/{guildid}", token)
                 print("\nhint: use /help\nuse Ctrl+C to quit")
@@ -253,14 +300,14 @@ def rs(channelid, token):
                         print("press any key to continue")
                         readchar.readkey()
                 else:
-                    send_message(channelid, content, token)
+                    send_message(token, cid, content)
         except KeyboardInterrupt:
             clear()
             print("\n")
             break
             
-def typing(channelid, token):
-    url = f"https://discord.com/api/v10/channels/{channelid}/typing"
+def typing(token, cid):
+    url = f"https://discord.com/api/v10/channels/{cid}/typing"
     headers = {"Authorization": f"{token}", "Content-Type": "application/json"}
     response = requests.post(url, headers=headers)
     if response.status_code == 200:
@@ -278,38 +325,62 @@ def custom_get_request(path,token):
     if response.status_code == 200:
         return response.json()
     else:
-        print(f"Requested {response.url} with code {response.status_code}")
+        logger.debug(f"Requested {response.url} with code {response.status_code}")
         return None
 def browse_root():
     print("Use 'browse guild' or 'browse direct' instead of 'browse'.")
+def validate_channel(token, cid):
+    if not cid.isdigit() or cid in ['0', 0, None]:
+        return False
+    else:
+        c = custom_get_request(f"/channels/{cid}", token)
+        if not c:
+            return False
+    return True
 def channel(cid):
+    ChannelID.set(cid)
     return cid
 def dev(token):
     developers = [978596696156147754]
+    
+    #* if you know what you're doing, set this flag to True, this will skip the check.
+    skip = False
+    
     id = get_discord_user_info(token)['id']
-    if int(id) in developers:
-        print(f"Welcome back, {get_discord_username(get_discord_user_info(token))}")
-        print((get_discord_user_info(token)))
+    if int(id) in developers or skip:
+        logger.info(f"Welcome back, {get_discord_username(get_discord_user_info(token))}")
+        logger.debug((get_discord_user_info(token)))
     else:
-        print("This command is only available to developers. ")
-def about(token):
+        logger.error("This command is only available to developers. ")
+def about(token: str, img: bool = True, **kwargs) -> None:
+    """
+        Print the information about the user.
+        If the image flag is True, it will also display the user's profile picture.
+        Args:
+            token (str): Discord token.
+            img (bool, optional): Whether to display the user's profile picture. Defaults to True.
+    """
     channelid = ChannelID.get()
-    user_info = get_discord_user_info(token)
-    if user_info is None:
-        print("Unable to get info.")
+    user = get_user(token)
+    if user is None:
+        logger.error("Unable to get info.")
         pass
     else:
-
-        response = requests.get(get_profile_picture_url(user_info))
+        logger.debug("Rendering profile picture")
+        response = requests.get(get_profile_picture(user))
         img = Image.open(BytesIO(response.content))
-        print(climage.convert_pil(img))
-        time.sleep(1)
-        print(f"Display Name: {user_info['global_name']}")
-        print(f"Username: {get_discord_username(user_info)}")
-        print(f"ID: {user_info['id']}")
-        try:
-            print(f"Selected channel: {channelid}")
-        except NameError:
-            print(f"No channel selected.")
+        print(climage.convert_pil(img, width=50))
+        logger.info(f"Display Name: {user['global_name']}")
+        logger.info(f"Username: {user['username']}")
+        logger.info(f"ID: {user['id']}")
+        if validate_channel(token, channelid):
+            logger.info(f"Channel: {channelid}")
+        elif channelid in [0, None, '0']:
+            logger.warning("Channel not selected.")
+        else:
+            logger.error(f"Invalid channel selected.")
+            logger.error(f"Please select a valid channel.")
+            logger.error(f"You can do it by one of the commands in 'help -c'.")
+            
 if __name__ == "__main__":
     raise RuntimeError("You should not run this script directly. Use the main script.")

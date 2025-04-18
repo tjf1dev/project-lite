@@ -3,21 +3,26 @@ import os
 from login import login,config
 from functions import *
 from os.path import abspath, dirname
-import pytz, tzlocal, dateutil.parser
+import pytz, tzlocal, dateutil.parser, traceback
 os.chdir(dirname(abspath(__file__)))
-__version__ = '0.2.1-alpha'
+__version__ = '0.2.2-alpha'
 def change_channel_id(cid):
     config.ChannelID.set(cid)
-    print(f"Channel ID changed to {cid}.")
-def help_func():
+    logger.debug(f"Channel ID changed to {cid}.")
+def help_func(flags:str=None):
     print("Available commands:\n")
     commands = Command.list()
     for command in commands:
-        command_class = getattr(Command, command)
+        command_class = command
 
         args = "none"
-        if command_class.args > 0:
-            args = str(command_class.args)
+        if len(command_class.args) > 0:
+            args = ""
+            for a in command_class.args:
+                if a["required"]:
+                    args += f"<{a['name']}>"
+                else:
+                    args += f"[{a['name']}]"
         requires_list = []
 
         if 0 in command_class.require:
@@ -27,7 +32,17 @@ def help_func():
         requires = ", ".join(requires_list)
         aliases = ", ".join(command_class.syntax[1:]) if len(command_class.syntax) > 1 else "none"
         if command_class.hidden == False:
-            print(f"{command_class.syntax[0]}:\n{command_class.description}\nArguments: {args}\nRequires: {requires}\nAliases: {aliases}\n")
+            if "-c" in flags and not DataType.ChannelID in command_class.returns:
+                pass
+            else:
+                print(f"{command_class.syntax[0]}:\n{command_class.description}\nArguments: {args}\nRequires: {requires}\nAliases: {aliases}\n")
+class DataType:
+    class ChannelID:
+        type = int | str
+    class Token:
+        type = str
+    class Flag:
+        type = str
         
 class Command:
     """# Command
@@ -36,7 +51,7 @@ class Command:
         returns a list of all available commands.\n
         
         ### args\n
-        argument count.\n
+        list of arguments.\n
 
         ### syntax\n
         the command syntax (used to trigger the command)\n
@@ -52,24 +67,23 @@ class Command:
         ### returns\n
         what does the command return\n
         1 - channel id"""
-    def list():
-        command_names = []
-        for key in dir(Command):  # Iterate over attributes of Commands
-            attr = getattr(Command, key)
-            if hasattr(attr, 'args') and isinstance(attr.args, int):
-                command_names.append(key)
-        return command_names
     class read:
-        args = 0
+        args = []
         syntax = ["read"]
         description = "Reads messages from the selected channel."
         usage = syntax[0]
         function = receive_messages
-        require = [0, 1]
+        require = [DataType.Token, DataType.ChannelID]
         returns = []
         hidden = False
     class help:
-        args = 0
+        args = [
+            {
+                "type":DataType.Flag,
+                "name":"flags",
+                "required":False
+            }
+        ]
         syntax = ["help"]
         description = "Shows information about project-lite and displays all available commands"
         function = help_func
@@ -78,52 +92,52 @@ class Command:
         returns = []
         hidden = False
     class browse:
-        args = 0
-        syntax = ["browse","browse guild", "guilds"]
+        args = []
+        syntax = ["browse","browse guild", "guilds", "browse server", "servers"]
         description = "Selects a guild"
         function = browse
         usage = syntax[0]
-        require = [0]
-        returns = [1]
+        require = [DataType.Token]
+        returns = [DataType.ChannelID]
         hidden = False
     class browse_direct:
-        args = 0
+        args = []
         syntax = ["browse direct", "browse dm", "dms"]
         description = "Selects a dm"
         function = browse_direct
         usage = syntax[0]
-        require = [0]
-        returns = [1]
+        require = [DataType.Token]
+        returns = [DataType.ChannelID]
         hidden = False
     class browse_channel:
-        args = 0
+        args = []
         syntax = ["browse channels", "channels"]
         description = "Selects a channel"
         function = browse_channel
         usage = syntax[0]
-        require = [0,1]
-        returns = [1]
+        require = [DataType.Token,DataType.ChannelID]
+        returns = [DataType.ChannelID]
         hidden = False
     class rs_mode:
-        args = 0
+        args = []
         syntax = ["rs"]
         description = "Starts the Read-Send mode in a selected channel"
         function = rs
         usage = syntax[0]
-        require = [0, 1]
+        require = [DataType.Token, DataType.ChannelID]
         returns = []
         hidden = False
     class fav_add:
-        args = 0
-        syntax = ["fav add"]
+        args = []
+        syntax = ["fav-add"]
         description = "Adds the current channel to favorites."
         function = fav
         usage = syntax[0]
-        require = [0,1]
+        require = [DataType.Token, DataType.ChannelID]
         returns = []
         hidden = False
     class fav:
-        args = 0
+        args = []
         syntax = ["fav"]
         description = "Shows a list of favorite channels."
         function = fav_select
@@ -132,37 +146,59 @@ class Command:
         returns = [1]
         hidden = False
     class me:
-        args = 0
+        args = []
         syntax = ["me","about"]
         description = "Shows info about the current logged in user."
         function = about
         usage = syntax[0]
-        require = [0]
+        require = [DataType.Token]
         returns = []
         hidden = False
     class dev:
-        args = 0
+        args = []
         syntax = ["dev"]
         description = "Opens developer mode."
         function = dev
         usage = syntax[0]
-        require = [0]
+        require = [DataType.Token]
         returns = []
         hidden = True
     class channel:
-        args = 1
+        args = [
+            {
+                "type":DataType.ChannelID,
+                "name":"channel id",
+                "required":True
+            }
+        ]
         syntax = ["channel","cid","cc"]
         description = "Changes the current channel."
         function = channel
-        usage = f"{syntax[0]} <channel id>"
+        usage = f"{syntax[0]} {[f"<{a['name']}>" for a in args]}"
         require = []
-        returns = [1]
+        returns = [DataType.ChannelID]
         hidden = False
+    class logout:
+        args = []
+        syntax = ["logout","log-out"]
+        description = "Logs out the current user."
+        function = logout
+        require = []
+        returns = []
+    @staticmethod
+    def list():
+        command_classes = Command.__dict__.values()
+        command_classes = [
+            cls for cls in command_classes
+            if isinstance(cls, type)
+            and not cls.__name__.startswith('__')
+        ]
+        command_class_names = [cls for cls in command_classes]
+        return command_class_names
+
+
 login.Login()
 token = login.token
-if get_discord_user_info(token) is None:
-    print("Failed to authenticate. Please check your token.")
-    exit()
 channelid = None
 
 
@@ -171,54 +207,70 @@ def main():
     
     
     print("project-lite \na cli discord client.\nhint: try running \"help\".")
-
     try:
         while True:
             channelid = config.ChannelID.get()
-            channel_id = channelid
-            if channelid == 0 or channelid== None:
-                command_raw = input(": ").lower().strip()
+            if channelid in [0, None, '0']:
+                cmdraw = input("[CMD]: ").lower().strip()
             else:
                 channel = custom_get_request(f"channels/{channelid}",token)
-                guildid = channel["guild_id"]
-                guild = custom_get_request(f"guilds/{guildid}",token)
-                command_raw = input(f"[{channel["name"]} in {guild["name"]}][CMD]: ").lower().strip()
-            command_list = Command.list()
-            command_name = None
-            command_class = None
-
-            for command in command_list:
-                cls = getattr(Command, command)
-                if command_raw in cls.syntax:
-                    command_name = command
-                    command_class = cls
-                    break
-
-            if command_class:
-                requires = command_class.require
-                args = command_class.args
-                if args == 0:
-                    if requires == []:
-                        command_class.function()
-                    
-                    elif requires == [0]:
-                        command_class.function(token)
-                    
-                    elif requires == [1]:
-                        if channel_id == 0:
-                            print(f"Error: This command requires a valid channel ID.")
-                        else:
-                            command_class.function(channelid)
-                    elif requires == [0, 1]:
-                        if channel_id == 0 or channelid == None:
-                            print(f"Error: This command requires a valid channel ID.")
-                        else:
-                            result = command_class.function(channelid, token)
-
-                            if command_class.returns == [1]:
-                                change_channel_id(result)
-            else:
-                print(f"Unknown command: {command_raw}. Type 'help' for a list of available commands.")
+                if not channel and not validate_channel(token,channelid):
+                    cmdraw = input("[invalid cid, run 'about' for more info][CMD]: ").lower().strip()
+                else:
+                    guildid = channel["guild_id"]
+                    guild = custom_get_request(f"guilds/{guildid}",token)
+                    cmdraw = input(f"[{channel["name"]} in {guild["name"]}][CMD]: ").lower().strip()
+            cmdfull = cmdraw.split(" ")
+            cmdname = cmdfull[0]
+            cmdargs = cmdfull[1:]
+            cmdlist = Command.list()
+            cmdfound = False
+            for cmdc in cmdlist:
+                if cmdname in cmdc.syntax:
+                    cmdfound = True
+                    logger.debug(f"Executing command {cmdc.__name__}...")
+                    cmdi = cmdc() 
+                    args = {}
+                    if DataType.Token in cmdi.require:
+                        val = validate_token(token)
+                        if val!= True:
+                            logger.error("Invalid token, please reauthenticate")
+                            login.Login(4)
+                            break
+                        args["token"] = token
+                    if DataType.ChannelID in cmdi.require:
+                        if channelid in [None, 0]:
+                            logger.error("No channel ID selected. Use 'help -c' to select one.")
+                            continue
+                        args["cid"] = channelid
+                    if len(cmdi.args) != 0:
+                        # here is the scary part
+                        for arg in cmdi.args:
+                            try:
+                                if arg["type"] == DataType.ChannelID:
+                                    args["cid"] = cmdargs[0]
+                                elif arg["type"] == DataType.Flag:
+                                    args["flags"] = cmdargs[0]
+                            except IndexError:
+                                if args.get("required", False):
+                                    logger.error(f"Missing required argument for {arg['name']}.")
+                                    continue
+                                else:
+                                    args = {}
+                    try:
+                        #* the actual call
+                        logger.debug(f"Arguments that will be passed: {", ".join(args.keys())}")
+                        cmdc.function(**args)
+                    except TypeError as e:
+                        ft = traceback.format_exc()
+                        logger.error("An issue occured while trying to execute this command.")
+                        logger.error("Please report this issue with the full logs.")
+                        logger.error(ft)
+                        logger.error(f"{type(e).__name__}: {e}")
+                        logger.info(f"Version: {__version__}, Command: {cmdc.__name__}")
+                        logger.info("https://github.com/tjf1dev/project-lite/issues")
+            if not cmdfound:
+                logger.error(f"Command {cmdname} not found. Use 'help' for a list of available commands.")
 
     except KeyboardInterrupt:
         print("\nKeyboardInterrupt, goodbye!")
