@@ -7,8 +7,8 @@ Discord CLI Client made in python.
 > [!NOTE]
 > The client doesn't send share your token with anyone.
 
-## is it against tos of discord?
-> this client uses the Discord API to perform actions. discord does not allow this. use the client at your own risk
+> [!WARNING]
+> discord does not allow 3rd party clients. use the client at your own risk
 
 # How do i use the client?
 project-lite may be a bit complicated to use, so here's a simple explanation on how to log in and read/send messages.
