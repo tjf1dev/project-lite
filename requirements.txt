@@ -6,3 +6,6 @@ climage
 python-dateutil
 readchar
 colorama
+ruamel.yaml
+rich
+websockets
