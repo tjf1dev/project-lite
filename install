@@ -1,0 +1,109 @@
+#!/bin/bash
+
+echo -n "[i/u] select action (install/uninstall, default: install): "
+read -n 1 action
+echo
+
+case "$action" in
+    u)
+        action="uninstall"
+        ;;
+    i|"")
+        action="install"
+        ;;
+    *)
+        echo "unrecognized input, defaulting to install."
+        action="install"
+        ;;
+esac
+
+if [[ "$action" == "install" ]]; then
+
+    echo -n "[r/u] install type (root/user, default: user): "
+    read -n 1 input
+    echo
+
+    if ! command -v rsync &>/dev/null; then
+        echo "❌ rsync not found. install it using your package manager."
+    fi
+
+    case "$input" in
+        r)
+            install_type="root"
+            ;;
+        u|"")
+            install_type="user"
+            ;;
+        *)
+            install_type="user"
+            ;;
+    esac
+
+    echo "selected install type: $install_type"
+
+    if [[ "$install_type" == "root" ]]; then
+        echo "running root installation..."
+
+        sudo mkdir -p /usr/local/lib/project-lite
+        sudo mkdir -p /usr/local/bin
+
+        sudo rsync -av --exclude='.git' ./ /usr/local/lib/project-lite
+
+        sudo install -m 755 run-root /usr/local/bin/plite
+        echo "✅ installed successfully (root). run it with 'plite'"
+
+    else
+        echo "running user installation..."
+
+        mkdir -p "$HOME/.local/lib/project-lite"
+        mkdir -p "$HOME/.local/bin"
+        rsync -av --exclude='.git' ./ "$HOME/.local/lib/project-lite"
+        install -m 755 run-user "$HOME/.local/bin/plite"
+        echo "✅ installed successfully (user). run it with 'plite'"
+        if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
+            echo "⚠️  warning: $HOME/.local/bin is not in your path."
+            echo "    add this to your shell config (e.g. ~/.bashrc or ~/.zshrc):"
+            echo '    export PATH="$HOME/.local/bin:$PATH"'
+        fi
+    fi
+
+elif [[ "$action" == "uninstall" ]]; then
+
+    echo -n "[r/u] uninstall type (root/user, default: user): "
+    read -n 1 input
+    echo
+
+    case "$input" in
+        r)
+            uninstall_type="root"
+            ;;
+        u|"")
+            uninstall_type="user"
+            ;;
+        *)
+            uninstall_type="user"
+            ;;
+    esac
+
+    echo "selected uninstall type: $uninstall_type"
+
+    if [[ "$uninstall_type" == "root" ]]; then
+        echo "running root uninstall..."
+
+        sudo rm -rfv /usr/local/lib/project-lite
+        sudo rm -fv /usr/local/bin/plite
+        sudo rm -rf /etc/project-lite
+        echo "✅ uninstalled successfully (root)."
+    else
+        echo "running user uninstall..."
+
+        rm -rfv "$HOME/.local/lib/project-lite"
+        rm -fv "$HOME/.local/bin/plite"
+        rm -rfv "$HOME/.config/project-lite"
+        echo "✅ uninstalled successfully (user)."
+    fi
+
+else
+    echo "invalid action selected. exiting."
+    exit 1
+fi

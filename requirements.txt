@@ -6,4 +6,6 @@ climage
 python-dateutil
 readchar
 colorama
-prompt_toolkit
+ruamel.yaml
+rich
+websockets
